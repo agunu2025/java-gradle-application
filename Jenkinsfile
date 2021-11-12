@@ -22,11 +22,23 @@ pipeline{
                 script{
                     withCredentials([string(credentialsId: 'docker_password', variable: 'docker_password_generated')])  {
                              sh '''
-                                docker build -t 34.125.224.169:8085/springapp:${VERSION} .
+                                docker build -t 34.125.224.169:8084/springapp:${VERSION} .
                                 docker login -u admin -p $docker_password_generated 34.125.224.169:8085
-                                docker push  34.125.224.169:8085/springapp:${VERSION}
-                                docker rmi 34.125.224.169:8085/springapp:${VERSION}
+                                docker push  34.125.224.169:8084/springapp:${VERSION}
+                                docker rmi 34.125.224.169:8084/springapp:${VERSION}
                             '''
+                    }
+                }
+            }
+        }
+        stage('indentifying misconfigs using datree in helm charts'){
+            steps{
+                script{
+
+                    dir('kubernetes/') {
+                        withEnv(['DATREE_TOKEN=GJdx2cP2TCDyUY3EhQKgTc']) {
+                              sh 'helm datree test myapp/'
+                        }
                     }
                 }
             }
