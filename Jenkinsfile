@@ -4,28 +4,28 @@ pipeline{
         VERSION = "${env.BUILD_ID}"
     }
     stages{
-        stage ('Test & Build Artifact') {
-          agent {
-              docker {
-                  image 'openjdk:11'
-                  args '-v "$PWD":/app'
-                  reuseNode true
+       stage ('Test & Build Artifact') {
+         agent {
+             docker {
+                image 'openjdk:11'
+                args '-v "$PWD":/app'
+                reuseNode true
                  }
                }
-            steps {
-               sh 'chmod +x gradlew'
-               sh './gradlew clean build'
+          steps {
+            sh 'chmod +x gradlew'
+            sh './gradlew clean build'
             }
-          }
-        stage("docker build & docker push"){
+         }
+      stage("docker build & docker push"){
             steps{
                 script{
-                    withCredentials([string(credentialsId: 'docker_password', variable: 'docker_password_generated')])  {
+                    withCredentials([string(credentialsId: 'docker_pass', variable: 'docker_password')]) {
                              sh '''
-                                docker build -t 34.125.224.169:8084/springapp:${VERSION} .
-                                docker login -u admin -p $docker_password_generated 34.125.224.169:8085
-                                docker push  34.125.224.169:8084/springapp:${VERSION}
-                                docker rmi 34.125.224.169:8084/springapp:${VERSION}
+                                docker build -t 34.125.214.226:8083/springapp:${VERSION} .
+                                docker login -u admin -p $docker_password 34.125.214.226:8083
+                                docker push  34.125.214.226:8083/springapp:${VERSION}
+                                docker rmi 34.125.214.226:8083/springapp:${VERSION}
                             '''
                     }
                 }
@@ -46,12 +46,12 @@ pipeline{
         stage("pushing the helm charts to nexus"){
             steps{
                 script{
-                    withCredentials([string(credentialsId: 'docker_password', variable: 'docker_password_generated')]) {
+                    withCredentials([string(credentialsId: 'docker_pass', variable: 'docker_password')]) {
                           dir('kubernetes/') {
                              sh '''
                                  helmversion=$( helm show chart myapp | grep version | cut -d: -f 2 | tr -d ' ')
                                  tar -czvf  myapp-${helmversion}.tgz myapp/
-                                 curl -u admin:$docker_password_generated http://34.125.224.169:8081/repository/helm-hosted/ --upload-file myapp-${helmversion}.tgz -v
+                                 curl -u admin:$docker_password http://34.125.214.226:8081/repository/helm-hosted/ --upload-file myapp-${helmversion}.tgz -v
                             '''
                           }
                     }
