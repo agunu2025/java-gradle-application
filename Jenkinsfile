@@ -3,27 +3,30 @@ pipeline{
     environment{
         VERSION = "${env.BUILD_ID}"
     }
-    stages{
+  stages{
         stage ('Test & Build Artifact') {
-          agent {
-              docker {
-                  image 'openjdk:11'
-                  args '-v "$PWD":/app'
-                  reuseNode true
+              agent {
+                  docker {
+                      image 'openjdk:11'
+                       args '-v "$PWD":/app'
+                       reuseNode true
+                         }
+                       }
+                      steps {
+                      sh 'chmod +x gradlew'
+                     sh './gradlew clean build'
+                       }
+                  }
+        stage("docker build"){
+            steps{
+                 sh 'docker build -t 34.125.224.169:8084/springapp:${VERSION} .'
                  }
-               }
-            steps {
-               sh 'chmod +x gradlew'
-               sh './gradlew clean build'
-            }
-          }
-
-        stage("docker build & docker push"){
+             }
+        stage("docker push"){
             steps{
                 script{
                     withCredentials([string(credentialsId: 'nexus-password-credentials', variable: 'docker_password_generated')]) {
                              sh '''
-                                docker build -t 34.125.224.169:8084/springapp:${VERSION} .
                                 docker login -u admin -p $docker_password_generated 34.125.224.169:8084
                                 docker push  34.125.224.169:8084/springapp:${VERSION}
                                 docker rmi 34.125.224.169:8084/springapp:${VERSION}
@@ -58,11 +61,10 @@ pipeline{
                }
             }
         }
-
         stage('verifying app deployment'){
             steps{
                 script{
-                     withCredentials([kubeconfigFile(credentialsId: 'kubernetes-config', variable: 'KUBECONFIG')]) {
+                     withCredentials([kubeconfigFile(credentialsId: 'configConfig-files', variable: 'KUBECONFIG')]) {
                          sh 'kubectl run curl --image=curlimages/curl -i --rm --restart=Never -- curl myjavaapp-myapp:8080'
 
                      }
@@ -75,5 +77,5 @@ pipeline{
 		always {
 			mail bcc: '', body: "<br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL de build: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "${currentBuild.result} CI: Project name -> ${env.JOB_NAME}", to: "deekshith.snsep@gmail.com";
 		 }
-	   }
+	 }
 }
