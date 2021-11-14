@@ -17,7 +17,7 @@ pipeline{
                      sh './gradlew clean build'
                        }
                   }
-        stage("docker and build"){
+        stage("docker build"){
             steps{
                  sh 'docker build -t 34.125.224.169:8084/springapp:${VERSION} .'
                  }
