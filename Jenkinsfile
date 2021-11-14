@@ -19,17 +19,17 @@ pipeline{
                   }
         stage("docker build"){
             steps{
-                 sh 'docker build -t 34.125.224.169:8084/springapp:${VERSION} .'
+                 sh 'docker build -t 34.125.88.86:8085/mss-app:${VERSION} .'
                  }
              }
         stage("docker push"){
             steps{
                 script{
-                    withCredentials([string(credentialsId: 'nexus-password-credentials', variable: 'docker_password_generated')]) {
+                    withCredentials([string(credentialsId: 'nexus_docker_password_generated', variable: 'nexus_docker_password_generated')]) {
                              sh '''
-                                docker login -u admin -p $docker_password_generated 34.125.224.169:8084
-                                docker push  34.125.224.169:8084/springapp:${VERSION}
-                                docker rmi 34.125.224.169:8084/springapp:${VERSION}
+                                docker login -u admin -p $nexus_docker_password_generated 34.125.88.86:8085
+                                docker push  34.125.88.86:8085/mss-app:${VERSION}
+                                docker rmi 34.125.88.86:8085/mss-app:${VERSION}
                             '''
                     }
                 }
@@ -38,12 +38,12 @@ pipeline{
         stage("pushing the helm charts to nexus"){
             steps{
                 script{
-                    withCredentials([string(credentialsId: 'nexus-password-credentials', variable: 'docker_password_generated')]) {
+                    withCredentials([string(credentialsId: 'nexus_docker_password_generated', variable: 'nexus_docker_password_generated')]) {
                           dir('kubernetes/') {
                              sh '''
                                  helmversion=$( helm show chart myapp | grep version | cut -d: -f 2 | tr -d ' ')
                                  tar -czvf  myapp-${helmversion}.tgz myapp/
-                                 curl -u admin:$docker_password_generated http://34.125.224.169:8081/repository/helm-package/ --upload-file myapp-${helmversion}.tgz -v
+                                 curl -u admin:$nexus_docker_password_generated http://34.125.88.86:8081/repository/mss-helm-package/ --upload-file myapp-${helmversion}.tgz -v
                             '''
                           }
                     }
@@ -53,9 +53,9 @@ pipeline{
         stage('Deploying application on k8s cluster') {
             steps {
                script{
-                   withCredentials([kubeconfigFile(credentialsId: 'configConfig-files', variable: 'KUBECONFIG')]) {
+                  withCredentials([kubeconfigFile(credentialsId: 'kubernetes-configuration', variable: 'KUBECONFIG')])   {
                         dir('kubernetes/') {
-                          sh 'helm upgrade --install --set image.repository="34.125.224.169:8084/springapp" --set image.tag="${VERSION}" myjavaapp myapp/ '
+                          sh 'helm upgrade --install --set image.repository="34.125.88.86:8085/mss-app" --set image.tag="${VERSION}" myjavaapp myapp/ '
                         }
                     }
                }
@@ -64,7 +64,7 @@ pipeline{
         stage('verifying app deployment'){
             steps{
                 script{
-                     withCredentials([kubeconfigFile(credentialsId: 'configConfig-files', variable: 'KUBECONFIG')]) {
+                     withCredentials([kubeconfigFile(credentialsId: 'kubernetes-configuration', variable: 'KUBECONFIG')])  {
                          sh 'kubectl run curl --image=curlimages/curl -i --rm --restart=Never -- curl myjavaapp-myapp:8080'
 
                      }
