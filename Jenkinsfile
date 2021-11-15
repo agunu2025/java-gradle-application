@@ -2,11 +2,9 @@ pipeline{
     agent any
     environment{
           VERSION = "${env.BUILD_ID}"
-        }
+         }
     docker {
-          image 'openjdk:11'
-            args '-v "$PWD":/app'
-            reuseNode true
+           image 'openjdk:11'
          }
   stages{
         stage ('Test & Build Artifact') {
@@ -59,16 +57,6 @@ pipeline{
                         }
                     }
                }
-            }
-        }
-        stage('verifying app deployment'){
-            steps{
-                script{
-                     withCredentials([kubeconfigFile(credentialsId: 'kubernetes-configuration', variable: 'KUBECONFIG')])  {
-                         sh 'kubectl run curl --image=curlimages/curl -i --rm --restart=Never -- curl myjavaapp-myapp:8080'
-
-                     }
-                }
             }
         }
 
