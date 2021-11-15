@@ -6,15 +6,15 @@ pipeline{
   stages{
         stage ('Test & Build Artifact') {
               agent {
-              docker {
-                     image 'openjdk:11'
-                   }
+                  docker {
+                        image 'openjdk:11'
+                         }
+                      }
                 steps {
                     sh 'chmod +x gradlew'
                      sh './gradlew clean build'
                        }
                     }
-                 }
         stage("docker build"){
             steps{
                  sh 'docker build -t 34.125.127.76:8085/gradle-hosted-8085:${VERSION} .'
