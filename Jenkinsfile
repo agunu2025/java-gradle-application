@@ -3,12 +3,12 @@ pipeline{
     environment{
           VERSION = "${env.BUILD_ID}"
          }
-    docker {
-           image 'openjdk:11'
-         }
   stages{
         stage ('Test & Build Artifact') {
               agent {
+              docker {
+                     image 'openjdk:11'
+                   }
                 steps {
                     sh 'chmod +x gradlew'
                      sh './gradlew clean build'
