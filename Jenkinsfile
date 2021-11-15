@@ -14,8 +14,9 @@ pipeline{
                 steps {
                     sh 'chmod +x gradlew'
                      sh './gradlew clean build'
-                      }
-                  }
+                       }
+                    }
+                 }
         stage("docker build"){
             steps{
                  sh 'docker build -t 34.125.127.76:8085/gradle-hosted-8085:${VERSION} .'
@@ -72,5 +73,4 @@ pipeline{
         }
 
     }
-}
 }
