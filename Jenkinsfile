@@ -1,25 +1,25 @@
 pipeline{
     agent any
     environment{
-        VERSION = "${env.BUILD_ID}"
-    }
+          VERSION = "${env.BUILD_ID}"
+        }
+    docker {
+          image 'openjdk:11'
+            args '-v "$PWD":/app'
+            reuseNode true
+            }
+       }
   stages{
         stage ('Test & Build Artifact') {
               agent {
-                  docker {
-                      image 'openjdk:11'
-                       args '-v "$PWD":/app'
-                       reuseNode true
-                         }
-                       }
-                      steps {
-                      sh 'chmod +x gradlew'
+                steps {
+                    sh 'chmod +x gradlew'
                      sh './gradlew clean build'
-                       }
+                      }
                   }
         stage("docker build"){
             steps{
-                 sh 'docker build -t 34.125.88.86:8085/mss-app:${VERSION} .'
+                 sh 'docker build -t 34.125.127.76:8085/gradle-hosted-8085:${VERSION} .'
                  }
              }
         stage("docker push"){
@@ -27,9 +27,9 @@ pipeline{
                 script{
                     withCredentials([string(credentialsId: 'nexus_docker_password_generated', variable: 'nexus_docker_password_generated')]) {
                              sh '''
-                                docker login -u admin -p $nexus_docker_password_generated 34.125.88.86:8085
-                                docker push  34.125.88.86:8085/mss-app:${VERSION}
-                                docker rmi 34.125.88.86:8085/mss-app:${VERSION}
+                                docker login -u admin -p $nexus_docker_password_generated 34.125.127.76:8085
+                                docker push  34.125.127.76:8085/gradle-hosted-8085:${VERSION}
+                                docker rmi 34.125.127.76:8085/gradle-hosted-8085:${VERSION}
                             '''
                     }
                 }
@@ -43,7 +43,7 @@ pipeline{
                              sh '''
                                  helmversion=$( helm show chart myapp | grep version | cut -d: -f 2 | tr -d ' ')
                                  tar -czvf  myapp-${helmversion}.tgz myapp/
-                                 curl -u admin:$nexus_docker_password_generated http://34.125.88.86:8081/repository/mss-helm-package/ --upload-file myapp-${helmversion}.tgz -v
+                                 curl -u admin:$nexus_docker_password_generated http://34.125.127.76:8081/repository/gradle-helm-package/ --upload-file myapp-${helmversion}.tgz -v
                             '''
                           }
                     }
@@ -55,7 +55,7 @@ pipeline{
                script{
                   withCredentials([kubeconfigFile(credentialsId: 'kubernetes-configuration', variable: 'KUBECONFIG')])   {
                         dir('kubernetes/') {
-                          sh 'helm upgrade --install --set image.repository="34.125.88.86:8085/mss-app" --set image.tag="${VERSION}" myjavaapp myapp/ '
+                          sh 'helm upgrade --install --set image.repository="34.125.127.76:8085/gradle-hosted-8085" --set image.tag="${VERSION}" myjavaapp myapp/ '
                         }
                     }
                }
@@ -71,11 +71,6 @@ pipeline{
                 }
             }
         }
-    }
 
-    post {
-		always {
-			mail bcc: '', body: "<br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL de build: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "${currentBuild.result} CI: Project name -> ${env.JOB_NAME}", to: "deekshith.snsep@gmail.com";
-		 }
-	 }
+    }
 }
